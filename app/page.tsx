@@ -54,8 +54,9 @@ export default async function Home() {
           <section className="gate">
             <h1 className="gate-title">A private invitation</h1>
             <p className="gate-lead">
-              This celebration is for guests on the list. Enter the personal
-              password from your invite to see your RSVP and choose your meal.
+              Please come along and celebrate my 35th birthday with me. Enter
+              the personal password to see your RSVP and choose your meal. Hope
+              you can make it!
             </p>
             <LoginForm />
           </section>
