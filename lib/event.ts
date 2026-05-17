@@ -15,5 +15,5 @@ export const event = {
   giftsNote:
     process.env.EVENT_GIFTS ??
     "Your presence is enough — gifts are not required",
-  rsvpDeadline: process.env.RSVP_DEADLINE ?? "June 1, 2026",
+  rsvpDeadline: process.env.RSVP_DEADLINE ?? "26th of June, 2026",
 } as const;

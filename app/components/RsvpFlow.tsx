@@ -80,9 +80,7 @@ export function RsvpFlow({
     setDeclineSaved(false);
     setError("");
     if (value === "yes") {
-      setSavedAttendance(
-        existingResponse?.attendance === "yes" ? "yes" : "",
-      );
+      setSavedAttendance(existingResponse?.attendance === "yes" ? "yes" : "");
     }
   }
 
@@ -123,7 +121,7 @@ export function RsvpFlow({
           <div className="rsvp-message rsvp-message-maybe">
             <p role={showMaybeMessage ? "status" : undefined}>
               No worries — take your time to check. If your plans work out,
-              we&apos;d love to see you
+              I&apos;d love to see you
               {showMaybeMessage
                 ? ". Just come back and update your RSVP anytime."
                 : "."}
