@@ -1,0 +1,27 @@
+[
+  {
+    "id": "lindsay",
+    "name": "Lindsay",
+    "passwordHash": "$2b$12$HjxOX4sGCo.G08kPb.Zgfe/jy9MYWW/1rWlkpgZhgnU5rpZBkpL4G"
+  },
+  {
+    "id": "sophie",
+    "name": "Sophie",
+    "passwordHash": "$2b$12$gSlfjxzu/wPaGoKBmP6lOeVpFnl3vSH7WDdZ6X.cdh44E.wbJljoq"
+  },
+  {
+    "id": "daniel",
+    "name": "Daniel",
+    "passwordHash": "$2b$12$kxmzsenD4.JzMNEN4vvfm.I68jPw6qv2RyiVhqvXzX0kLHBgsRQH2"
+  },
+  {
+    "id": "alyna",
+    "name": "Alyna",
+    "passwordHash": "$2b$12$nB6n1K6VNe5X9gOJFPqPjuv8lBpv8lMQTiksUjjtKFW06uv2YF78G",
+    "partyMembers": [
+      { "id": "alyna", "name": "Alyna" },
+      { "id": "cameron", "name": "Cameron", "menu": "kids" },
+      { "id": "ileana", "name": "Ileana", "menu": "kids" }
+    ]
+  }
+]

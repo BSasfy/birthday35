@@ -32,6 +32,11 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!env.example
+
+# guest passwords & meal responses
+/data/guests.json
+/data/responses.json
 
 # vercel
 .vercel
