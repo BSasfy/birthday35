@@ -10,6 +10,8 @@ export type GuestAccount = {
   id: string;
   name: string;
   menu?: MenuType;
+  /** Lets this guest optionally add one unnamed invitee (+1) at RSVP. */
+  allowPlusOne?: boolean;
   partyMembers?: PartyMember[];
 };
 

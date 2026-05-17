@@ -7,20 +7,24 @@ import { Invitation } from "./components/Invitation";
 
 export default async function Home() {
   let guestName: string | null = null;
+  let guestId: string | null = null;
   let partyMembers: { id: string; name: string; menu?: "adult" | "kids" }[] =
     [];
   let accountGuest: { menu?: "adult" | "kids" } = {};
+  let allowPlusOne = false;
   let existingResponse = null;
 
   try {
-    const guestId = await getSessionGuestId();
-    if (guestId) {
-      const guest = await findGuestById(guestId);
+    const sessionGuestId = await getSessionGuestId();
+    if (sessionGuestId) {
+      const guest = await findGuestById(sessionGuestId);
       if (guest) {
         guestName = guest.name;
+        guestId = guest.id;
         partyMembers = getMealMembers(guest);
         accountGuest = { menu: guest.menu };
-        existingResponse = await getResponseForGuest(guestId);
+        allowPlusOne = guest.allowPlusOne === true;
+        existingResponse = await getResponseForGuest(sessionGuestId);
       }
     }
   } catch {
@@ -38,10 +42,12 @@ export default async function Home() {
       </header>
 
       <main className="site-main">
-        {guestName ? (
+        {guestName && guestId ? (
           <Invitation
+            guestId={guestId}
             partyMembers={partyMembers}
             accountGuest={accountGuest}
+            allowPlusOne={allowPlusOne}
             existingResponse={existingResponse}
           />
         ) : (

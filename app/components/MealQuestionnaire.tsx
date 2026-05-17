@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { plusOneMemberId } from "@/lib/plus-one";
 import {
   fixedDessert,
   getMenuOptions,
   type MealOption,
-  type MenuType,
 } from "@/lib/meals";
 import {
   resolveMemberMenu,
@@ -19,10 +19,26 @@ import {
 } from "@/lib/response-types";
 
 type Props = {
+  guestId: string;
   partyMembers: PartyMember[];
   accountGuest: Pick<GuestAccount, "menu">;
+  allowPlusOne?: boolean;
   existingResponse: GuestResponse | null;
 };
+
+function readPlusOneFromResponse(
+  guestId: string,
+  existingResponse: GuestResponse | null,
+): { hasPlusOne: boolean; plusOneName: string } {
+  const plusId = plusOneMemberId(guestId);
+  if (existingResponse && isPartyResponse(existingResponse)) {
+    const plus = existingResponse.members.find((m) => m.memberId === plusId);
+    if (plus) {
+      return { hasPlusOne: true, plusOneName: plus.memberName };
+    }
+  }
+  return { hasPlusOne: false, plusOneName: "" };
+}
 
 type MemberFormState = {
   attending: boolean;
@@ -108,19 +124,37 @@ function MealOptionChoice({
 }
 
 export function MealQuestionnaire({
+  guestId,
   partyMembers,
   accountGuest,
+  allowPlusOne = false,
   existingResponse,
 }: Props) {
-  const isParty = partyMembers.length > 1;
+  const isFixedParty = partyMembers.length > 1;
+  const initialPlusOne = readPlusOneFromResponse(guestId, existingResponse);
+  const [hasPlusOne, setHasPlusOne] = useState(initialPlusOne.hasPlusOne);
+  const [plusOneName, setPlusOneName] = useState(initialPlusOne.plusOneName);
+
+  const mealMembers = useMemo(() => {
+    if (!allowPlusOne || !hasPlusOne) return partyMembers;
+    const name = plusOneName.trim() || "Guest";
+    return [
+      ...partyMembers,
+      { id: plusOneMemberId(guestId), name, menu: "adult" as const },
+    ];
+  }, [allowPlusOne, hasPlusOne, plusOneName, partyMembers, guestId]);
+
+  const isMultiGuest = mealMembers.length > 1;
+  const plusOneId = plusOneMemberId(guestId);
+
   const [memberState, setMemberState] = useState(() =>
-    buildInitialMemberState(partyMembers, accountGuest, existingResponse),
+    buildInitialMemberState(mealMembers, accountGuest, existingResponse),
   );
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const memberMenus = partyMembers.map((member) => ({
+  const memberMenus = mealMembers.map((member) => ({
     member,
     menu: resolveMemberMenu(member, accountGuest),
   }));
@@ -167,8 +201,13 @@ export function MealQuestionnaire({
     setError("");
     setSuccess(false);
 
-    if (isParty) {
-      const anyoneComing = partyMembers.some(
+    if (allowPlusOne && hasPlusOne && !plusOneName.trim()) {
+      setError("Please enter your guest's name.");
+      return;
+    }
+
+    if (isFixedParty) {
+      const anyoneComing = mealMembers.some(
         (member) => memberState[member.id].attending,
       );
       if (!anyoneComing) {
@@ -181,14 +220,17 @@ export function MealQuestionnaire({
 
     setLoading(true);
 
-    const payload = isParty
+    const payload =
+      isFixedParty || allowPlusOne
       ? {
           attendance: "yes",
           members: memberMenus.map(({ member, menu }) => {
             const state = memberState[member.id];
+            const displayName =
+              member.id === plusOneId ? plusOneName.trim() : member.name;
             return {
               memberId: member.id,
-              memberName: member.name,
+              memberName: displayName,
               attending: state.attending,
               menu,
               main: state.attending ? state.main : "",
@@ -239,19 +281,53 @@ export function MealQuestionnaire({
   return (
     <form className="meal-form" onSubmit={handleSubmit}>
       <h2 className="meal-form-title">
-        {isParty ? "Your party's menu choices" : "Your menu choices"}
+        {isMultiGuest ? "Your menu choices" : "Your menu choices"}
       </h2>
       <p className="meal-form-intro">
-        {isParty && hasKids && hasAdults
+        {isFixedParty && hasKids && hasAdults
           ? "Your main meal and a drink with your main are on me. Grown-ups will also have birthday cake — kids can pick a dessert below. Toggle off anyone who can't make it."
-          : isParty && hasKids
+          : isFixedParty && hasKids
             ? "Choose a main and dessert for each child who's coming. Toggle off anyone who can't make it."
-            : isParty
+            : isFixedParty
               ? "Your main meal and a drink with your main are on me — choose a main for everyone who's coming. Toggle off anyone who can't make it. And of course there will be cake!"
-              : hasKids
-                ? "Pick a main and dessert below — it's on me!"
-                : "Your main meal and a drink with your main are on me — just pick what you'd like below. And of course there will be cake!"}
+              : allowPlusOne
+                ? "Your main meal and a drink with your main are on me — just pick what you'd like below. Bringing someone? Toggle +1 to add them. And of course there will be cake!"
+                : hasKids
+                  ? "Pick a main and dessert below — it's on me!"
+                  : "Your main meal and a drink with your main are on me — just pick what you'd like below. And of course there will be cake!"}
       </p>
+      {allowPlusOne && (
+        <label className="plus-one-toggle">
+          <input
+            type="checkbox"
+            checked={hasPlusOne}
+            onChange={(e) => {
+              const next = e.target.checked;
+              setHasPlusOne(next);
+              if (!next) {
+                setPlusOneName("");
+                setMemberState((prev) => {
+                  const next = { ...prev };
+                  delete next[plusOneId];
+                  return next;
+                });
+              } else {
+                setMemberState((prev) => ({
+                  ...prev,
+                  [plusOneId]: {
+                    attending: true,
+                    main: "",
+                    dessert: fixedDessert.id,
+                    dietaryNotes: "",
+                    allergies: "",
+                  },
+                }));
+              }
+            }}
+          />
+          <span className="plus-one-toggle-label">I&apos;m bringing a +1</span>
+        </label>
+      )}
       {hasExisting && !success && (
         <p className="meal-form-note">
           You&apos;ve already submitted — update anytime before the RSVP
@@ -261,16 +337,18 @@ export function MealQuestionnaire({
 
       {memberMenus.map(({ member, menu }) => {
         const state = memberState[member.id];
-        const cantMakeIt = isParty && !state.attending;
+        if (!state) return null;
+        const cantMakeIt = isFixedParty && !state.attending;
         const options = getMenuOptions(menu);
         const isKids = menu === "kids";
+        const isPlusOne = member.id === plusOneId;
 
         return (
           <div
             key={member.id}
             className={`party-member${cantMakeIt ? " party-member--absent" : ""}${isKids ? " party-member--kids" : ""}`}
           >
-            {isParty && (
+            {isFixedParty && (
               <div className="party-member-header">
                 <div className="party-member-heading">
                   <h3 className="party-member-name">{member.name}</h3>
@@ -294,7 +372,28 @@ export function MealQuestionnaire({
               </div>
             )}
 
-            {!isParty && isKids && (
+            {isMultiGuest && !isFixedParty && (
+              <div className="party-member-header party-member-header--plus-one">
+                {isPlusOne ? (
+                  <label className="plus-one-name-field">
+                    <span className="plus-one-name-label">Your guest&apos;s name</span>
+                    <input
+                      type="text"
+                      className="login-input plus-one-name-input"
+                      value={plusOneName}
+                      onChange={(e) => setPlusOneName(e.target.value)}
+                      placeholder="Their name"
+                      required
+                      maxLength={80}
+                    />
+                  </label>
+                ) : (
+                  <h3 className="party-member-name">{member.name}</h3>
+                )}
+              </div>
+            )}
+
+            {!isMultiGuest && isKids && (
               <span className="party-member-badge party-member-badge-solo">
                 Kids menu
               </span>
@@ -311,8 +410,10 @@ export function MealQuestionnaire({
                   <legend className="meal-section-legend">
                     <span className="meal-section-title">Main</span>
                     <span className="meal-section-subtitle">
-                      {isParty
-                        ? `${member.name}'s choice`
+                      {isMultiGuest
+                        ? isPlusOne
+                          ? "Their choice of main meal"
+                          : `${member.name}'s choice`
                         : "Your choice of main meal"}
                     </span>
                   </legend>
@@ -399,8 +500,8 @@ export function MealQuestionnaire({
       )}
       {success && (
         <p className="meal-success" role="status">
-          {isParty
-            ? "Thank you — your party's RSVP is saved. See you at the table!"
+          {isMultiGuest
+            ? "Thank you — your RSVP is saved. See you at the table!"
             : "Thank you — your choices are saved. See you at the table!"}
         </p>
       )}

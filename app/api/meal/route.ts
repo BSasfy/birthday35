@@ -18,6 +18,7 @@ import {
   saveResponse,
   type MemberMealChoices,
 } from "@/lib/responses";
+import { allowsPlusOne, isPlusOneMemberId, plusOneMemberId } from "@/lib/plus-one";
 import { isAttendance, type Attendance } from "@/lib/rsvp";
 
 function isValidChoice(
@@ -130,6 +131,70 @@ function validatePartyMealChoices(
   return results;
 }
 
+function validatePlusOneMealChoices(
+  body: Record<string, unknown>,
+  guest: Guest,
+): MemberMealChoices[] | null {
+  if (!Array.isArray(body.members)) return null;
+
+  const primary = getMealMembers(guest)[0];
+  const plusId = plusOneMemberId(guest.id);
+
+  const primaryEntry = body.members.find(
+    (item) =>
+      typeof item === "object" &&
+      item !== null &&
+      "memberId" in item &&
+      item.memberId === primary.id,
+  ) as Record<string, unknown> | undefined;
+
+  if (!primaryEntry || primaryEntry.attending === false) return null;
+
+  const primaryMenu = resolveMemberMenu(primary, guest);
+  const primaryFields = parseMemberMealFields(primaryEntry, primaryMenu);
+  if (!primaryFields) return null;
+
+  const results: MemberMealChoices[] = [
+    {
+      memberId: primary.id,
+      memberName: primary.name,
+      attending: true,
+      menu: primaryMenu,
+      ...primaryFields,
+    },
+  ];
+
+  const plusEntry = body.members.find(
+    (item) =>
+      typeof item === "object" &&
+      item !== null &&
+      "memberId" in item &&
+      item.memberId === plusId,
+  ) as Record<string, unknown> | undefined;
+
+  if (!plusEntry) return results;
+
+  const plusName =
+    typeof plusEntry.memberName === "string" ? plusEntry.memberName.trim() : "";
+  if (!plusName || plusName.length > 80) return null;
+  if (plusEntry.attending === false) return null;
+
+  const plusMember: PartyMember = { id: plusId, name: plusName, menu: "adult" };
+  const plusMenu = resolveMemberMenu(plusMember, guest);
+  const plusFields = parseMemberMealFields(plusEntry, plusMenu);
+  if (!plusFields) return null;
+
+  results.push({
+    memberId: plusId,
+    memberName: plusName,
+    attending: true,
+    menu: plusMenu,
+    ...plusFields,
+  });
+
+  return results;
+}
+
 function emptyMeals(menu: MenuType = "adult"): MealChoices {
   return {
     main: "",
@@ -172,7 +237,8 @@ export async function POST(request: Request) {
   const attendance = body.attendance as Attendance;
   const submittedAt = new Date().toISOString();
   const mealMembers = getMealMembers(guest);
-  const isParty = mealMembers.length > 1;
+  const isFixedParty = mealMembers.length > 1;
+  const hasPlusOneOption = allowsPlusOne(guest);
   const accountMenu = resolveMemberMenu(mealMembers[0], guest);
 
   if (attendance === "no" || attendance === "maybe") {
@@ -181,19 +247,56 @@ export async function POST(request: Request) {
       guestName: guest.name,
       attendance,
       submittedAt,
-      ...(isParty ? { members: [] } : emptyMeals(accountMenu)),
+      ...(isFixedParty || hasPlusOneOption
+        ? { members: [] }
+        : emptyMeals(accountMenu)),
     };
     await saveResponse(response);
     return NextResponse.json({ ok: true, response });
   }
 
-  if (isParty) {
+  if (isFixedParty) {
     const members = validatePartyMealChoices(body, mealMembers, guest);
     if (!members) {
       return NextResponse.json(
         {
           error:
             "Please complete each guest's menu (main and dessert for kids), or mark them as can't make it.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const response = {
+      guestId: guest.id,
+      guestName: guest.name,
+      attendance: "yes" as const,
+      submittedAt,
+      members,
+    };
+
+    await saveResponse(response);
+    return NextResponse.json({ ok: true, response });
+  }
+
+  if (hasPlusOneOption) {
+    const members = validatePlusOneMealChoices(body, guest);
+    if (!members) {
+      const hasPlusEntry =
+        Array.isArray(body.members) &&
+        body.members.some(
+          (item) =>
+            typeof item === "object" &&
+            item !== null &&
+            "memberId" in item &&
+            isPlusOneMemberId(String(item.memberId)),
+        );
+
+      return NextResponse.json(
+        {
+          error: hasPlusEntry
+            ? "Please enter your guest's name and choose their main."
+            : "Please choose your main.",
         },
         { status: 400 },
       );

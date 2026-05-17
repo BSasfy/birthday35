@@ -5,8 +5,10 @@ import { RsvpFlow } from "./RsvpFlow";
 import { SignOutButton } from "./SignOutButton";
 
 type Props = {
+  guestId: string;
   partyMembers: PartyMember[];
   accountGuest: Pick<GuestAccount, "menu">;
+  allowPlusOne?: boolean;
   existingResponse: GuestResponse | null;
 };
 
@@ -22,8 +24,10 @@ function formatInviteeNames(members: PartyMember[]): string {
 }
 
 export function Invitation({
+  guestId,
   partyMembers,
   accountGuest,
+  allowPlusOne,
   existingResponse,
 }: Props) {
   const invitees = formatInviteeNames(partyMembers);
@@ -76,8 +80,10 @@ export function Invitation({
       </div>
 
       <RsvpFlow
+        guestId={guestId}
         partyMembers={partyMembers}
         accountGuest={accountGuest}
+        allowPlusOne={allowPlusOne}
         existingResponse={existingResponse}
       />
     </div>

@@ -7,14 +7,18 @@ import type { GuestResponse } from "@/lib/response-types";
 import { MealQuestionnaire } from "./MealQuestionnaire";
 
 type Props = {
+  guestId: string;
   partyMembers: PartyMember[];
   accountGuest: Pick<GuestAccount, "menu">;
+  allowPlusOne?: boolean;
   existingResponse: GuestResponse | null;
 };
 
 export function RsvpFlow({
+  guestId,
   partyMembers,
   accountGuest,
+  allowPlusOne,
   existingResponse,
 }: Props) {
   const [attendance, setAttendance] = useState<Attendance | "">(
@@ -142,8 +146,10 @@ export function RsvpFlow({
 
       {showMeals && (
         <MealQuestionnaire
+          guestId={guestId}
           partyMembers={partyMembers}
           accountGuest={accountGuest}
+          allowPlusOne={allowPlusOne}
           existingResponse={
             existingResponse?.attendance === "yes" ? existingResponse : null
           }
