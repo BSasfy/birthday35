@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { readFile } from "fs/promises";
 import path from "path";
-import type { GuestAccount, PartyMember } from "./guest-types";
+import type { GuestAccount } from "./guest-types";
 
 export type { PartyMember } from "./guest-types";
 export { getMealMembers, resolveMemberMenu } from "./guest-types";
