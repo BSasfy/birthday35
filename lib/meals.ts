@@ -78,6 +78,23 @@ export const kidsMealOptions = {
 
 export const fixedDessert = mealOptions.dessert[0];
 
+/** Extra main options shown only for the named party member (guest id). */
+export const memberExclusiveMainOptions: Record<string, readonly MealOption[]> =
+  {
+    daniel: [
+      {
+        id: "daniel-proper-steak",
+        label: "Proper Steak like you usually get",
+      },
+    ],
+    finn: [
+      {
+        id: "finn-own-main",
+        label: "I'll bring my own main meal",
+      },
+    ],
+  };
+
 export type MealChoices = {
   main: string;
   dessert: string;
@@ -87,6 +104,15 @@ export type MealChoices = {
 
 export type MenuType = "adult" | "kids";
 
-export function getMenuOptions(menu: MenuType) {
-  return menu === "kids" ? kidsMealOptions : mealOptions;
+export function getMenuOptions(menu: MenuType, memberId?: string) {
+  const base = menu === "kids" ? kidsMealOptions : mealOptions;
+  const extra =
+    memberId && menu === "adult"
+      ? memberExclusiveMainOptions[memberId]
+      : undefined;
+  if (!extra?.length) return base;
+  return {
+    ...base,
+    main: [...base.main, ...extra],
+  };
 }

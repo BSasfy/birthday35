@@ -4,9 +4,10 @@ export function mealLabel(
   id: string,
   field: "main" | "dessert",
   menu: MenuType = "adult",
+  memberId?: string,
 ): string {
   if (!id) return "—";
-  const options = getMenuOptions(menu)[field];
+  const options = getMenuOptions(menu, memberId)[field];
   return options.find((option) => option.id === id)?.label ?? id;
 }
 

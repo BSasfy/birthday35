@@ -96,6 +96,7 @@ export function AdminDashboard({
                                 member.main,
                                 "main",
                                 member.menu ?? "adult",
+                                member.memberId,
                               )}
                             </dd>
                           </div>
@@ -130,7 +131,14 @@ export function AdminDashboard({
                 <dl className="admin-details">
                   <div>
                     <dt>Main</dt>
-                    <dd>{mealLabel(response.main ?? "", "main")}</dd>
+                    <dd>
+                      {mealLabel(
+                        response.main ?? "",
+                        "main",
+                        "adult",
+                        response.guestId,
+                      )}
+                    </dd>
                   </div>
                   <div>
                     <dt>Dessert</dt>

@@ -34,8 +34,9 @@ function isValidChoice(
 function parseMemberMealFields(
   source: Record<string, unknown>,
   menu: MenuType,
+  memberId?: string,
 ): MealChoices | null {
-  const options = getMenuOptions(menu);
+  const options = getMenuOptions(menu, memberId);
 
   if (!isValidChoice(source.main, options.main)) {
     return null;
@@ -68,7 +69,7 @@ function validateSingleMealChoices(
 ): (MealChoices & { menu: MenuType }) | null {
   const member = getMealMembers(guest)[0];
   const menu = resolveMemberMenu(member, guest);
-  const fields = parseMemberMealFields(body, menu);
+  const fields = parseMemberMealFields(body, menu, member.id);
   if (!fields) return null;
   return { ...fields, menu };
 }
@@ -112,7 +113,7 @@ function validatePartyMealChoices(
     }
 
     attendingCount += 1;
-    const fields = parseMemberMealFields(entry, menu);
+    const fields = parseMemberMealFields(entry, menu, member.id);
     if (!fields) return null;
 
     results.push({
@@ -151,7 +152,11 @@ function validatePlusOneMealChoices(
   if (!primaryEntry || primaryEntry.attending === false) return null;
 
   const primaryMenu = resolveMemberMenu(primary, guest);
-  const primaryFields = parseMemberMealFields(primaryEntry, primaryMenu);
+  const primaryFields = parseMemberMealFields(
+    primaryEntry,
+    primaryMenu,
+    primary.id,
+  );
   if (!primaryFields) return null;
 
   const results: MemberMealChoices[] = [

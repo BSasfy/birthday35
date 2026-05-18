@@ -339,7 +339,7 @@ export function MealQuestionnaire({
         const state = memberState[member.id];
         if (!state) return null;
         const cantMakeIt = isFixedParty && !state.attending;
-        const options = getMenuOptions(menu);
+        const options = getMenuOptions(menu, member.id);
         const isKids = menu === "kids";
         const isPlusOne = member.id === plusOneId;
 
