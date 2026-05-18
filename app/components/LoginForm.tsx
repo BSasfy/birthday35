@@ -42,7 +42,8 @@ export function LoginForm() {
         Your personal password
       </label>
       <p className="login-hint">
-        Find it on your invitation — it unlocks your RSVP and menu choices.
+        I&apos;ve messaged you the password, or ask if you forgot it — it
+        unlocks your RSVP and menu choices.
       </p>
       <input
         id="password"
@@ -54,7 +55,11 @@ export function LoginForm() {
         placeholder="Enter password"
         required
       />
-      {error && <p className="login-error" role="alert">{error}</p>}
+      {error && (
+        <p className="login-error" role="alert">
+          {error}
+        </p>
+      )}
       <button type="submit" className="btn-primary" disabled={loading}>
         {loading ? "Opening…" : "Open my invitation"}
       </button>
