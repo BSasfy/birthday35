@@ -10,6 +10,10 @@ export const mealOptions = {
     { id: "haggis", label: "Haggis, Neeps & Tatties" },
     { id: "burger", label: "Double Cheeseburger with Chips" },
     { id: "steak", label: "Flat Iron Steak with Fries & Sauce" },
+    {
+      id: "vegetarian-pasta",
+      label: "Vegetarian (TBC — probably pasta)",
+    },
   ],
   dessert: [{ id: "cake", label: "There will be cake!" }],
 } as const satisfies { main: MealOption[]; dessert: MealOption[] };
@@ -40,6 +44,10 @@ export const kidsMealOptions = {
       id: "popcorn-chicken",
       label: "Popcorn Chicken",
       description: "Crispy chicken bites, peas and fries",
+    },
+    {
+      id: "vegetarian-pasta",
+      label: "Vegetarian (TBC — probably pasta)",
     },
   ],
   dessert: [
