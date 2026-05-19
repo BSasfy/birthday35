@@ -6,6 +6,33 @@ import type { GuestAccount } from "./guest-types";
 export type { PartyMember } from "./guest-types";
 export { getMealMembers, resolveMemberMenu } from "./guest-types";
 
+export type PendingInvitee = {
+  guestId: string;
+  name: string;
+  /** All invite names when this login covers a household party. */
+  partyNames?: string[];
+};
+
+export function getPendingInvitees(
+  guests: GuestAccount[],
+  responses: { guestId: string }[],
+): PendingInvitee[] {
+  const responded = new Set(responses.map((r) => r.guestId));
+  return guests
+    .filter((guest) => !responded.has(guest.id))
+    .map((guest) => ({
+      guestId: guest.id,
+      name: guest.name,
+      partyNames:
+        guest.partyMembers && guest.partyMembers.length > 1
+          ? guest.partyMembers.map((member) => member.name)
+          : undefined,
+    }))
+    .sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    );
+}
+
 const guestsPath = path.join(process.cwd(), "data", "guests.json");
 const examplePath = path.join(process.cwd(), "data", "guests.example.json");
 

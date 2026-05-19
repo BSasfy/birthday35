@@ -1,5 +1,6 @@
 import { readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
+import type { Attendance } from "./rsvp";
 import type { GuestResponse } from "./response-types";
 import { isRedisConfigured, redisGetResponses, redisSetResponses } from "./redis";
 
@@ -52,12 +53,19 @@ export async function getResponseForGuest(
   return all.find((r) => r.guestId === guestId) ?? null;
 }
 
+function adminListRank(attendance: Attendance): number {
+  return attendance === "no" ? 1 : 0;
+}
+
 export async function getAllResponses(): Promise<GuestResponse[]> {
   const all = await readAll();
-  return all.sort(
-    (a, b) =>
-      new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
-  );
+  return all.sort((a, b) => {
+    const rankDiff = adminListRank(a.attendance) - adminListRank(b.attendance);
+    if (rankDiff !== 0) return rankDiff;
+    return (
+      new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+    );
+  });
 }
 
 export async function saveResponse(response: GuestResponse): Promise<void> {

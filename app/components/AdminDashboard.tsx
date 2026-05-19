@@ -2,8 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { formatSubmittedAt, mealLabel } from "@/lib/format-meals";
+import type { PendingInvitee } from "@/lib/guests";
 import type { GuestResponse } from "@/lib/responses";
-import { isPartyResponse } from "@/lib/response-types";
+import {
+  isPartyResponse,
+  sortPartyMembersForAdmin,
+} from "@/lib/response-types";
 import type { Attendance } from "@/lib/rsvp";
 
 function attendanceLabel(attendance: Attendance): string {
@@ -20,12 +24,14 @@ function attendanceClass(attendance: Attendance): string {
 
 type AdminDashboardProps = {
   responses: GuestResponse[];
+  pendingInvitees: PendingInvitee[];
   storage: "redis" | "file";
   guestCount: number;
 };
 
 export function AdminDashboard({
   responses,
+  pendingInvitees,
   storage,
   guestCount,
 }: AdminDashboardProps) {
@@ -56,14 +62,47 @@ export function AdminDashboard({
         </button>
       </header>
 
+      {pendingInvitees.length > 0 && (
+        <section className="admin-pending" aria-labelledby="admin-pending-heading">
+          <h2 id="admin-pending-heading" className="admin-section-title">
+            Awaiting response ({pendingInvitees.length})
+          </h2>
+          <ul className="admin-pending-list">
+            {pendingInvitees.map((invitee) => (
+              <li key={invitee.guestId} className="admin-pending-item">
+                <span className="admin-pending-name">{invitee.name}</span>
+                {invitee.partyNames && (
+                  <span className="admin-pending-party">
+                    {invitee.partyNames.join(", ")}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {responses.length === 0 ? (
-        <p className="admin-empty">
-          No responses yet. They will appear here as guests submit.
-        </p>
+        pendingInvitees.length === 0 && (
+          <p className="admin-empty">
+            No responses yet. They will appear here as guests submit.
+          </p>
+        )
       ) : (
-        <div className="admin-list">
-          {responses.map((response) => (
-            <article key={response.guestId} className="admin-card">
+        <section
+          className="admin-responses"
+          aria-labelledby={
+            pendingInvitees.length > 0 ? "admin-responses-heading" : undefined
+          }
+        >
+          {pendingInvitees.length > 0 && (
+            <h2 id="admin-responses-heading" className="admin-section-title">
+              Responses ({responses.length})
+            </h2>
+          )}
+          <div className="admin-list">
+            {responses.map((response) => (
+              <article key={response.guestId} className="admin-card">
               <header className="admin-card-header">
                 <h2 className="admin-card-title">{response.guestName}</h2>
                 <span className={attendanceClass(response.attendance)}>
@@ -76,7 +115,7 @@ export function AdminDashboard({
 
               {response.attendance === "yes" && isPartyResponse(response) ? (
                 <div className="admin-members">
-                  {response.members.map((member) => (
+                  {sortPartyMembersForAdmin(response.members).map((member) => (
                     <div key={member.memberId} className="admin-member">
                       <h3 className="admin-member-name">
                         {member.memberName}
@@ -158,9 +197,10 @@ export function AdminDashboard({
                   )}
                 </dl>
               ) : null}
-            </article>
-          ))}
-        </div>
+              </article>
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );

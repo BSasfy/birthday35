@@ -3,7 +3,11 @@ import { AdminDashboard } from "../components/AdminDashboard";
 import { AdminLoginForm } from "../components/AdminLoginForm";
 import { isAdminConfigured, isAdminSession } from "@/lib/admin-auth";
 import { event } from "@/lib/event";
-import { loadGuests } from "@/lib/guests";
+import {
+  getPendingInvitees,
+  loadGuests,
+  type PendingInvitee,
+} from "@/lib/guests";
 import {
   getAllResponses,
   getResponsesStorage,
@@ -22,14 +26,17 @@ export default async function AdminPage() {
   let isAdmin = false;
   let responses: GuestResponse[] = [];
   let guestCount = 0;
+  let pendingInvitees: PendingInvitee[] = [];
   let storage: "redis" | "file" = "file";
 
   if (configured) {
     try {
       isAdmin = await isAdminSession();
       if (isAdmin) {
+        const guests = await loadGuests();
         responses = await getAllResponses();
-        guestCount = (await loadGuests()).length;
+        guestCount = guests.length;
+        pendingInvitees = getPendingInvitees(guests, responses);
         storage = getResponsesStorage();
       }
     } catch {
@@ -57,6 +64,7 @@ export default async function AdminPage() {
         ) : isAdmin ? (
           <AdminDashboard
             responses={responses}
+            pendingInvitees={pendingInvitees}
             storage={storage}
             guestCount={guestCount}
           />
